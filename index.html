@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>造句小超人 - 首先、然後、最後</title>
+    <style>
+        :root {
+            --primary: #FF9F1C;
+            --secondary: #2EC4B6;
+            --accent: #E71D36;
+            --bg: #FDFFFC;
+            --text: #011627;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: "Micsosoft JhengHei", "Heiti TC", sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 20px 20px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 800px;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 { color: var(--accent); margin-bottom: 10px; font-size: 2rem; }
+        h2 { color: var(--secondary); margin-bottom: 20px; }
+        p { font-size: 1.2rem; line-height: 1.6; }
+
+        /* Screens */
+        .screen { display: none; animation: fadeIn 0.5s; width: 100%; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Inputs & Buttons */
+        input[type="text"] {
+            padding: 15px;
+            font-size: 1.2rem;
+            border: 3px solid var(--secondary);
+            border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            transition: transform 0.1s, box-shadow 0.1s;
+            margin: 10px;
+            box-shadow: 0 4px 0 #d68310;
+        }
+
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #d68310; }
+        .btn-secondary { background-color: var(--secondary); box-shadow: 0 4px 0 #239a8e; }
+        .btn-secondary:active { box-shadow: 0 0 0 #239a8e; }
+
+        /* Game Elements */
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--secondary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            min-height: 80px;
+            position: relative;
+        }
+
+        .step-row.correct { border-color: var(--secondary); background: #eafffa; }
+        .step-row.wrong { border-color: var(--accent); background: #fff0f0; }
+
+        .step-img {
+            font-size: 3rem;
+            width: 80px;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .step-slot {
+            flex: 1;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .step-slot:hover { background: #f0f8ff; }
+        .step-slot.filled { border-color: var(--primary); color: var(--text); font-weight: bold; }
+
+        .fixed-text {
+            font-weight: bold;
+            color: var(--accent);
+            margin-right: 10px;
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+
+        .options-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff8e1;
+            border-radius: 15px;
+        }
+
+        .option-card {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        .option-card:hover { transform: scale(1.05); }
+        .option-card.selected { opacity: 0.3; cursor: default; transform: none; }
+
+        /* Leaderboard */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .leaderboard-table th { color: var(--accent); }
+        .rank-1 { color: gold; font-weight: bold; }
+        .rank-2 { color: silver; font-weight: bold; }
+        .rank-3 { color: #cd7f32; font-weight: bold; }
+        
+        .highlight-row { background-color: #fff8e1; font-weight: bold; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .step-row { flex-direction: column; text-align: center; padding: 15px; }
+            .step-img { margin-right: 0; margin-bottom: 10px; }
+            .step-slot { width: 90%; }
+            .fixed-text { margin-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. Login Screen -->
+    <div id="screen-login" class="screen active">
+        <h1>造句小超人 🦸‍♂️</h1>
+        <div style="font-size: 4rem; margin: 20px;">🏫</div>
+        <p>歡迎來到句子工廠！<br>請輸入你的名字開始遊戲：</p>
+        <input type="text" id="username" placeholder="例如：陳小明" maxlength="8">
+        <button class="btn" onclick="goToMenu()">開始！</button>
+    </div>
+
+    <!-- 2. Menu Screen -->
+    <div id="screen-menu" class="screen">
+        <h1>選擇難度</h1>
+        <p>你好，<span id="display-name" style="color:var(--primary); font-weight:bold;"></span>！<br>請選擇挑戰等級：</p>
+        
+        <button class="btn" onclick="startGame('easy')">⭐ 簡單 (填動作)</button>
+        <p style="font-size:0.9rem; color:#666;">已有「首先...」，只需找出動作。</p>
+        
+        <button class="btn btn-secondary" onclick="startGame('challenge')">⭐⭐ 挑戰 (填連接詞)</button>
+        <p style="font-size:0.9rem; color:#666;">已有動作，需填入「首先、然後、最後」。</p>
+        
+        <button class="btn" style="background-color:var(--accent); box-shadow: 0 4px 0 #a81224;" onclick="startGame('hard')">⭐⭐⭐ 困難 (全句排序)</button>
+        <p style="font-size:0.9rem; color:#666;">將整個句子按順序排好。</p>
+    </div>
+
+    <!-- 3. Game Screen -->
+    <div id="screen-game" class="screen">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <h2 id="level-indicator">關卡 1/3</h2>
+        
+        <div class="game-area" id="game-area">
+            <!-- Dynamic Content Here -->
+        </div>
+
+        <div class="options-pool" id="options-pool">
+            <!-- Draggable Options Here -->
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button class="btn" id="check-btn" onclick="checkAnswer()">檢查答案</button>
+            <button class="btn btn-secondary" id="read-btn" onclick="readSentence()" style="display:none;">🔊 朗讀句子</button>
+        </div>
+        <p id="feedback-msg" style="height: 20px; font-weight: bold;"></p>
+    </div>
+
+    <!-- 4. Result Screen -->
+    <div id="screen-result" class="screen">
+        <h1>🎉 完成挑戰！</h1>
+        <div style="font-size: 5rem;">🏆</div>
+        <h2>你的得分：<span id="final-score" style="color:var(--accent); font-size: 3rem;">0</span></h2>
+        
+        <h3>排行榜</h3>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>排名</th>
+                    <th>名字</th>
+                    <th>分數</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <!-- Rows generated by JS -->
+            </tbody>
+        </table>
+
+        <button class="btn" onclick="location.reload()">再玩一次</button>
+    </div>
+</div>
+
+<script>
+    // --- Game Data ---
+    const scenarios = [
+        {
+            id: 1,
+            visuals: ["🪥", "🦷", "✨"],
+            connectors: ["首先，", "然後，", "最後，"],
+            actions: ["我把牙膏擠在牙刷上。", "我用牙刷刷刷牙齒。", "我用清水漱口，牙齒真乾淨。"]
+        },
+        {
+            id: 2,
+            visuals: ["🌱", "🚿", "🌻"],
+            connectors: ["首先，", "然後，", "最後，"],
+            actions: ["我在泥土裡挖一個洞放種子。", "我每天為種子澆水。", "種子發芽，開出了漂亮的花。"]
+        },
+        {
+            id: 3,
+            visuals: ["👐", "🧼", "🧻"],
+            connectors: ["首先，", "然後，", "最後，"],
+            actions: ["我用水把雙手弄濕。", "我塗上肥皂搓出泡泡。", "我用水沖乾淨並擦乾雙手。"]
+        },
+        {
+            id: 4,
+            visuals: ["🍞", "🧀", "🥪"],
+            connectors: ["首先，", "然後，", "最後，"],
+            actions: ["我拿出一片方包。", "我在方包上放上芝士和火腿。", "我蓋上另一片方包，三文治完成了。"]
+        }
+    ];
+
+    // --- State Variables ---
+    let currentUser = "";
+    let currentDifficulty = "";
+    let currentScenarioIndex = 0;
+    let gameScenarios = [];
+    let score = 0;
+    let userAnswers = [null, null, null]; // Slots 1, 2, 3
+    let isLevelComplete = false;
+
+    // --- Navigation Functions ---
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function goToMenu() {
+        const nameInput = document.getElementById('username');
+        if (!nameInput.value.trim()) {
+            alert("請輸入你的名字！");
+            return;
+        }
+        currentUser = nameInput.value.trim();
+        document.getElementById('display-name').textContent = currentUser;
+        showScreen('screen-menu');
+    }
+
+    function startGame(difficulty) {
+        currentDifficulty = difficulty;
+        score = 0;
+        currentScenarioIndex = 0;
+        // Shuffle and pick 3 scenarios
+        gameScenarios = [...scenarios].sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        showScreen('screen-game');
+        loadLevel();
+    }
+
+    // --- Game Logic ---
+    function loadLevel() {
+        isLevelComplete = false;
+        userAnswers = [null, null, null];
+        document.getElementById('check-btn').style.display = 'inline-block';
+        document.getElementById('read-btn').style.display = 'none';
+        document.getElementById('feedback-msg').textContent = "";
+        document.getElementById('level-indicator').textContent = `關卡 ${currentScenarioIndex + 1} / 3`;
+        
+        // Update Progress
+        const progress = (currentScenarioIndex / 3) * 100;
+        document.getElementById('progress-fill').style.width = `${progress}%`;
+
+        const scenario = gameScenarios[currentScenarioIndex];
+        const gameArea = document.getElementById('game-area');
+        const optionsPool = document.getElementById('options-pool');
+        
+        gameArea.innerHTML = '';
+        optionsPool.innerHTML = '';
+
+        let optionsToRender = [];
+
+        // Build UI based on difficulty
+        for (let i = 0; i < 3; i++) {
+            const row = document.createElement('div');
+            row.className = 'step-row';
+            row.id = `row-${i}`;
+
+            // 1. Visual Diagram
+            const img = document.createElement('div');
+            img.className = 'step-img';
+            img.textContent = scenario.visuals[i];
+            row.appendChild(img);
+
+            // 2. Text Structure
+            const slotContainer = document.createElement('div');
+            slotContainer.className = 'step-slot';
+            slotContainer.dataset.index = i;
+            slotContainer.onclick = () => removeAnswer(i);
+            slotContainer.textContent = "點擊下方選項填入";
+            slotContainer.style.color = "#ccc";
+
+            if (currentDifficulty === 'easy') {
+                // Easy: Show Connector, Slot for Action
+                const fixedText = document.createElement('span');
+                fixedText.className = 'fixed-text';
+                fixedText.textContent = scenario.connectors[i];
+                row.appendChild(fixedText);
+                row.appendChild(slotContainer);
+                
+                // Add correct answer to pool
+                optionsToRender.push({ text: scenario.actions[i], type: 'action', correctIndex: i });
+
+            } else if (currentDifficulty === 'challenge') {
+                // Challenge: Slot for Connector, Show Action
+                row.appendChild(slotContainer);
+                const fixedText = document.createElement('span');
+                fixedText.className = 'fixed-text';
+                fixedText.style.marginLeft = "10px";
+                fixedText.style.color = "#333";
+                fixedText.style.fontWeight = "normal";
+                fixedText.textContent = scenario.actions[i];
+                row.appendChild(fixedText);
+
+                // Add correct answer to pool
+                optionsToRender.push({ text: scenario.connectors[i].replace('，',''), type: 'connector', correctIndex: i });
+
+            } else {
+                // Hard: Slot for Whole Sentence
+                row.appendChild(slotContainer);
+                // Add correct answer to pool
+                optionsToRender.push({ text: scenario.connectors[i] + scenario.actions[i], type: 'full', correctIndex: i });
+            }
+
+            gameArea.appendChild(row);
+        }
+
+        // Shuffle Options
+        optionsToRender.sort(() => 0.5 - Math.random());
+
+        // Render Options
+        optionsToRender.forEach((opt, idx) => {
+            const btn = document.createElement('div');
+            btn.className = 'option-card';
+            btn.textContent = opt.text;
+            btn.dataset.id = idx; // unique id for this render
+            btn.onclick = () => selectOption(btn, opt);
+            optionsPool.appendChild(btn);
+        });
+    }
+
+    function selectOption(btnElement, optionData) {
+        if (isLevelComplete) return;
+        if (btnElement.classList.contains('selected')) return;
+
+        // Find first empty slot
+        const emptySlotIndex = userAnswers.findIndex(ans => ans === null);
+        
+        if (emptySlotIndex !== -1) {
+            // Fill slot
+            userAnswers[emptySlotIndex] = optionData;
+            
+            // Update UI
+            const slot = document.querySelector(`.step-slot[data-index="${emptySlotIndex}"]`);
+            slot.textContent = optionData.text;
+            slot.classList.add('filled');
+            slot.style.color = "var(--text)";
+
+            // Mark option as used
+            btnElement.classList.add('selected');
+            // Link slot to button to restore later
+            slot.dataset.btnId = btnElement.dataset.id;
+        }
+    }
+
+    function removeAnswer(slotIndex) {
+        if (isLevelComplete) return;
+        if (userAnswers[slotIndex] === null) return;
+
+        // Restore option button
+        const slot = document.querySelector(`.step-slot[data-index="${slotIndex}"]`);
+        const btnId = slot.dataset.btnId;
+        const btn = document.querySelector(`.option-card[data-id="${btnId}"]`);
+        if (btn) btn.classList.remove('selected');
+
+        // Clear slot
+        userAnswers[slotIndex] = null;
+        slot.textContent = "點擊下方選項填入";
+        slot.classList.remove('filled');
+        slot.style.color = "#ccc";
+        
+        // Reset row color if it was marked wrong
+        document.getElementById(`row-${slotIndex}`).classList.remove('wrong');
+    }
+
+    function checkAnswer() {
+        if (userAnswers.includes(null)) {
+            document.getElementById('feedback-msg').textContent = "請填滿所有空格！";
+            document.getElementById('feedback-msg').style.color = "var(--accent)";
+            return;
+        }
+
+        let correctCount = 0;
+        userAnswers.forEach((ans, index) => {
+            const row = document.getElementById(`row-${index}`);
+            if (ans.correctIndex === index) {
+                correctCount++;
+                row.classList.add('correct');
+                row.classList.remove('wrong');
+            } else {
+                row.classList.add('wrong');
+                row.classList.remove('correct');
+            }
+        });
+
+        if (correctCount === 3) {
+            // Level Success
+            isLevelComplete = true;
+            score += 100;
+            document.getElementById('feedback-msg').textContent = "太棒了！全對！";
+            document.getElementById('feedback-msg').style.color = "var(--secondary)";
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('read-btn').style.display = 'inline-block';
+            
+            // Auto proceed after delay or let user read first
+            setTimeout(() => {
+                if(currentScenarioIndex < 2) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.className = 'btn';
+                    nextBtn.textContent = "下一關 ➡️";
+                    nextBtn.onclick = () => {
+                        currentScenarioIndex++;
+                        loadLevel();
+                    };
+                    document.getElementById('options-pool').innerHTML = '';
+                    document.getElementById('options-pool').appendChild(nextBtn);
+                } else {
+                    const finishBtn = document.createElement('button');
+                    finishBtn.className = 'btn';
+                    finishBtn.textContent = "看成績 🏆";
+                    finishBtn.onclick = showResults;
+                    document.getElementById('options-pool').innerHTML = '';
+                    document.getElementById('options-pool').appendChild(finishBtn);
+                }
+            }, 1000);
+
+        } else {
+            score = Math.max(0, score - 10);
+            document.getElementById('feedback-msg').textContent = "有些順序不對喔，再試試看！";
+            document.getElementById('feedback-msg').style.color = "var(--accent)";
+        }
+    }
+
+    // --- TTS Function (Cantonese) ---
+    function readSentence() {
+        const scenario = gameScenarios[currentScenarioIndex];
+        let fullText = "";
+        
+        // Construct full text naturally
+        for(let i=0; i<3; i++) {
+            fullText += scenario.connectors[i] + scenario.actions[i] + " ";
+        }
+
+        const utterThis = new SpeechSynthesisUtterance(fullText);
+        // Try to set Cantonese voice
+        const voices = window.speechSynthesis.getVoices();
+        const hkVoice = voices.find(v => v.lang.includes('HK') || v.name.includes('Cantonese'));
+        if (hkVoice) utterThis.voice = hkVoice;
+        
+        utterThis.rate = 0.9; // Slower for kids
+        window.speechSynthesis.speak(utterThis);
+    }
+
+    // --- Leaderboard Logic ---
+    function showResults() {
+        showScreen('screen-result');
+        document.getElementById('final-score').textContent = score;
+
+        // Generate Fake Data + User Data
+        let leaderboardData = [
+            { name: "一心", score: 280 },
+            { name: "子軒", score: 250 },
+            { name: "美玲", score: 220 },
+            { name: "家寶", score: 180 }
+        ];
+
+        // Add current user
+        leaderboardData.push({ name: currentUser, score: score });
+
+        // Sort
+        leaderboardData.sort((a, b) => b.score - a.score);
+
+        // Render Table
+        const tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = '';
+
+        leaderboardData.slice(0, 5).forEach((entry, index) => {
+            const tr = document.createElement('tr');
+            if (entry.name === currentUser) tr.classList.add('highlight-row');
+            
+            let rankClass = '';
+            if (index === 0) rankClass = 'rank-1';
+            if (index === 1) rankClass = 'rank-2';
+            if (index === 2) rankClass = 'rank-3';
+
+            tr.innerHTML = `
+                <td class="${rankClass}">${index + 1}</td>
+                <td>${entry.name}</td>
+                <td>${entry.score}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Preload voices
+    window.speechSynthesis.getVoices();
+</script>
+
+</body>
+</html>
